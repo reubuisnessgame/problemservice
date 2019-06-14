@@ -36,7 +36,7 @@ public class RepositoryComponent {
     }
 
 
-    private Long getUserIdFromToken(String token) {
+    long getUserIdFromToken(String token) {
         Jws<Claims> claims = jwtTokenProvider.getClaims(resolveToken(token));
         return (Long) claims.getBody().get("userId");
     }

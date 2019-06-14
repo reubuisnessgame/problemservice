@@ -24,6 +24,7 @@ public class ProblemDAO {
     private final RepositoryComponent repositoryComponent;
 
     private final TeamsRepository teamsRepository;
+    private boolean isGameStarted;
 
 
     public ProblemDAO(ProblemRepository problemRepository, AnswerRepository answerRepository, RepositoryComponent repositoryComponent, TeamsRepository teamsRepository) {
@@ -37,33 +38,44 @@ public class ProblemDAO {
         return problemRepository.save(new ProblemModel(title, text, answer, price));
     }
 
-    public ArrayList<ProblemFormWithoutAnswer> getAllProblems() throws NotFoundException {
-        Iterable<ProblemModel> problemModels = problemRepository.findAll();
-        if (!problemModels.iterator().hasNext()) {
-            throw new NotFoundException("Tasks not found");
-        }
-        ArrayList<ProblemFormWithoutAnswer> problemFormWithoutAnswers = new ArrayList<>();
-        problemModels.forEach((p) -> problemFormWithoutAnswers.add(new ProblemFormWithoutAnswer(p.getTitle(), p.getText(), p.getPrice())));
-        return problemFormWithoutAnswers;
+    public void stopStartGame(boolean gameStarted) {
+        isGameStarted = gameStarted;
     }
 
-    public boolean checkAnswer(String token, long problemId, double answer) {
-        TeamModel teamModel = repositoryComponent.getTeamByToken(token);
-        ProblemModel problemModel = problemRepository.findById(problemId).orElseThrow(()
-                -> new UsernameNotFoundException("Problem with ID" + problemId + " not found."));
-        if(answerRepository.findByUserIdAndProblemId(teamModel.getId(), problemModel.getProblemId()).isPresent()){
-            throw new IllegalArgumentException("You have already solved this problem");
+    public ArrayList<ProblemFormWithoutAnswer> getAllProblems(String token) throws NotFoundException, IllegalAccessException {
+        long userId = repositoryComponent.getUserIdFromToken(token);
+        if(isGameStarted || !teamsRepository.findById(userId).isPresent()) {
+            Iterable<ProblemModel> problemModels = problemRepository.findAll();
+            if (!problemModels.iterator().hasNext()) {
+                throw new NotFoundException("Tasks not found");
+            }
+            ArrayList<ProblemFormWithoutAnswer> problemFormWithoutAnswers = new ArrayList<>();
+            problemModels.forEach((p) -> problemFormWithoutAnswers.add(new ProblemFormWithoutAnswer(p.getTitle(), p.getText(), p.getPrice())));
+            return problemFormWithoutAnswers;
         }
-        if (answer == problemModel.getAnswer()) {
-            teamModel.setScore(teamModel.getScore() + problemModel.getPrice());
-            answerRepository.save(new AnswerModel(teamModel.getId(), problemModel.getProblemId()));
-            teamsRepository.save(teamModel);
-            return true;
-        } else {
-            teamModel.setScore(teamModel.getScore() - problemModel.getPrice());
-            teamsRepository.save(teamModel);
-            return false;
+        throw new IllegalAccessException("The game has not started yet");
+    }
+
+    public boolean checkAnswer(String token, long problemId, double answer) throws IllegalAccessException {
+        if(isGameStarted) {
+            TeamModel teamModel = repositoryComponent.getTeamByToken(token);
+            ProblemModel problemModel = problemRepository.findById(problemId).orElseThrow(()
+                    -> new UsernameNotFoundException("Problem with ID" + problemId + " not found."));
+            if (answerRepository.findByUserIdAndProblemId(teamModel.getId(), problemModel.getProblemId()).isPresent()) {
+                throw new IllegalArgumentException("You have already solved this problem");
+            }
+            if (answer == problemModel.getAnswer()) {
+                teamModel.setScore(teamModel.getScore() + problemModel.getPrice());
+                answerRepository.save(new AnswerModel(teamModel.getId(), problemModel.getProblemId()));
+                teamsRepository.save(teamModel);
+                return true;
+            } else {
+                teamModel.setScore(teamModel.getScore() - problemModel.getPrice());
+                teamsRepository.save(teamModel);
+                return false;
+            }
         }
+        throw new IllegalAccessException("The game has not started yet");
     }
 
     public void deleteById(long id){
