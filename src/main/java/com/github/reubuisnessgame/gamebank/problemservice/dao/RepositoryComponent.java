@@ -38,13 +38,7 @@ public class RepositoryComponent {
 
     long getUserIdFromToken(String token) {
         Jws<Claims> claims = jwtTokenProvider.getClaims(resolveToken(token));
-        return (Long) claims.getBody().get("userId");
-    }
-
-
-    TeamModel getTeamByNumber(Long number) {
-        return teamsRepository.findByTeamNumber(number).orElseThrow(() ->
-                new UsernameNotFoundException("Number: " + number + " not found"));
+        return Long.valueOf((Integer) claims.getBody().get("userId"));
     }
 
 

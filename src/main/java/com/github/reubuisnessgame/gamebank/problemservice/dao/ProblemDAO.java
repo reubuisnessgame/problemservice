@@ -44,7 +44,7 @@ public class ProblemDAO {
 
     public ArrayList<ProblemFormWithoutAnswer> getAllProblems(String token) throws NotFoundException, IllegalAccessException {
         long userId = repositoryComponent.getUserIdFromToken(token);
-        if(isGameStarted || !teamsRepository.findById(userId).isPresent()) {
+        if(isGameStarted || !teamsRepository.findByUserId(userId).isPresent()) {
             Iterable<ProblemModel> problemModels = problemRepository.findAll();
             if (!problemModels.iterator().hasNext()) {
                 throw new NotFoundException("Tasks not found");
@@ -66,7 +66,7 @@ public class ProblemDAO {
             }
             if (answer == problemModel.getAnswer()) {
                 teamModel.setScore(teamModel.getScore() + problemModel.getPrice());
-                answerRepository.save(new AnswerModel(teamModel.getId(), problemModel.getProblemId()));
+                answerRepository.save(new AnswerModel(teamModel.getUserId(), problemModel.getProblemId()));
                 teamsRepository.save(teamModel);
                 return true;
             } else {

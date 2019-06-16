@@ -1,8 +1,8 @@
 package com.github.reubuisnessgame.gamebank.problemservice.security.jwt;
 
-import com.github.reubuisnessgame.gamebank.adminservice.model.UserModel;
-import com.github.reubuisnessgame.gamebank.adminservice.repository.UserRepository;
-import com.github.reubuisnessgame.gamebank.adminservice.security.CustomUserDetailsService;
+import com.github.reubuisnessgame.gamebank.problemservice.model.UserModel;
+import com.github.reubuisnessgame.gamebank.problemservice.repository.UserRepository;
+import com.github.reubuisnessgame.gamebank.problemservice.security.CustomUserDetailsService;
 import io.jsonwebtoken.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
