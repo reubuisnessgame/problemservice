@@ -1,12 +1,9 @@
 package com.github.reubuisnessgame.gamebank.problemservice.security.jwt;
 
 import com.github.reubuisnessgame.gamebank.problemservice.model.ExceptionModel;
-import com.google.common.annotations.Beta;
 import com.google.gson.Gson;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.GenericFilterBean;
 
 import javax.servlet.FilterChain;
@@ -15,10 +12,13 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 public class JwtTokenFilter extends GenericFilterBean {
 
     private JwtTokenProvider jwtTokenProvider;
+
+    PrintWriter writer;
 
     JwtTokenFilter(JwtTokenProvider jwtTokenProvider) {
         this.jwtTokenProvider = jwtTokenProvider;
@@ -31,18 +31,25 @@ public class JwtTokenFilter extends GenericFilterBean {
         String token = jwtTokenProvider.resolveToken((HttpServletRequest) req);
         try {
             if (token != null && jwtTokenProvider.validateToken(token)) {
-                Authentication auth = jwtTokenProvider.getAuthentication(token);
+                Authentication auth = null;
+                try {
+                    auth = jwtTokenProvider.getAuthentication(token);
+                } catch (IllegalAccessException ignore) {
+                }
 
                 if (auth != null) {
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             }
-        }catch (InvalidJwtAuthenticationException e){
+        } catch (InvalidJwtAuthenticationException e) {
             ExceptionModel ex = new ExceptionModel(403, "Forbidden",
                     e.getMessage(), ((HttpServletRequest) req).getRequestURI());
             Gson gson = new Gson();
             String json = gson.toJson(ex);
-            res.getWriter().append(json);
+            if (writer == null) {
+                res.getWriter().append(json);
+            }
+
         }
         filterChain.doFilter(req, res);
     }
